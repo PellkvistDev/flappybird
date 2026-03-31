@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mitt Flappy Bird Spel</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #70c5ce;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h1 { color: white; text-shadow: 2px 2px #000; }
+
+        canvas {
+            border: 4px solid #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            background-color: #70c5ce;
+        }
+
+        .container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        /* Styling för nedladdningsknappen */
+        .download-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 15px 30px;
+            background-color: #ff9000;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 50px;
+            border: 3px solid #fff;
+            transition: transform 0.2s, background-color 0.2s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .download-btn:hover {
+            background-color: #e68200;
+            transform: scale(1.05);
+        }
+
+        .instructions {
+            color: white;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Flappy Bird Online</h1>
+    
+    <div class="instructions">Tryck på <b>Mellanslag</b> eller <b>Klicka</b> för att hoppa!</div>
+
+    <canvas id="gameCanvas" width="320" height="480"></canvas>
+
+    <div class="container">
+        <a href="flappy_bird.exe" class="download-btn" download>
+            📥 Ladda ner offlineversionen
+        </a>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Spelinställningar
+        let bird = { x: 50, y: 150, width: 20, height: 20, gravity: 0.6, lift: -10, velocity: 0 };
+        let pipes = [];
+        let frame = 0;
+        let score = 0;
+        let gameOver = false;
+
+        function createPipe() {
+            const gap = 120;
+            const minHeight = 50;
+            const maxHeight = canvas.height - gap - minHeight;
+            const height = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+            pipes.push({ x: canvas.width, top: height, bottom: canvas.height - height - gap });
+        }
+
+        function draw() {
+            // Bakgrund
+            ctx.fillStyle = "#70c5ce";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Fågel
+            ctx.fillStyle = "#f4d03f";
+            ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+
+            // Rör
+            ctx.fillStyle = "#2ecc71";
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, 40, pipe.top); // Övre rör
+                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, 40, pipe.bottom); // Undre rör
+            });
+
+            // Poäng
+            ctx.fillStyle = "white";
+            ctx.font = "24px Arial";
+            ctx.fillText(`Poäng: ${score}`, 10, 30);
+
+            if (gameOver) {
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
+                ctx.fillRect(0,0, canvas.width, canvas.height);
+                ctx.fillStyle = "white";
+                ctx.fillText("GAME OVER", canvas.width/2 - 70, canvas.height/2);
+                ctx.font = "16px Arial";
+                ctx.fillText("Klicka för att köra igen", canvas.width/2 - 75, canvas.height/2 + 30);
+            }
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            if (frame % 90 === 0) createPipe();
+
+            pipes.forEach((pipe, index) => {
+                pipe.x -= 2;
+
+                // Kollision
+                if (
+                    bird.x < pipe.x + 40 &&
+                    bird.x + bird.width > pipe.x &&
+                    (bird.y < pipe.top || bird.y + bird.height > canvas.height - pipe.bottom)
+                ) {
+                    gameOver = true;
+                }
+
+                if (pipe.x === 10) score++;
+                if (pipe.x + 40 < 0) pipes.splice(index, 1);
+            });
+
+            if (bird.y + bird.height > canvas.height || bird.y < 0) {
+                gameOver = true;
+            }
+
+            frame++;
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        function resetGame() {
+            bird.y = 150;
+            bird.velocity = 0;
+            pipes = [];
+            score = 0;
+            frame = 0;
+            gameOver = false;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                if (gameOver) resetGame();
+                else bird.velocity = bird.lift;
+            }
+        });
+
+        canvas.addEventListener('mousedown', () => {
+            if (gameOver) resetGame();
+            else bird.velocity = bird.lift;
+        });
+
+        loop();
+    </script>
+</body>
+</html>
